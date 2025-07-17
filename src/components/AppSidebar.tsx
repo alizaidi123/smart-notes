@@ -1,3 +1,4 @@
+// src/components/AppSidebar.tsx
 
 import { getUser } from "@/auth/server";
 import {
@@ -7,15 +8,15 @@ import {
   SidebarGroupLabel,
 } from "@/components/ui/sidebar";
 import { prisma } from "@/db/prisma";
-import { Prisma } from "@prisma/client"; 
+import type { Note } from "@prisma/client"; // Corrected import: import `Note` as a type
 import Link from "next/link";
 import SidebarGroupContent from "./SidebarGroupContent";
 
 async function AppSidebar() {
   const user = await getUser();
 
-
-  let notes: Prisma.NoteGetPayload<any>[] = [];
+  // Type the 'notes' array directly using the `Note` type imported from Prisma
+  let notes: Note[] = [];
 
   if (user) {
     notes = await prisma.note.findMany({
