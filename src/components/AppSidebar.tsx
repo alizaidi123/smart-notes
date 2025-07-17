@@ -6,17 +6,14 @@ import {
   SidebarGroupLabel,
 } from "@/components/ui/sidebar";
 import { prisma } from "@/db/prisma";
-import type { PrismaClient } from "@prisma/client";
-type NoteType = PrismaClient['note']['findMany'] extends (args: any) => Promise<infer U> ? U[number] : any;
-
+import { Note } from "@prisma/client";
 import Link from "next/link";
 import SidebarGroupContent from "./SidebarGroupContent";
 
 async function AppSidebar() {
   const user = await getUser();
 
-  // Use the newly defined NoteType
-  let notes: NoteType[] = [];
+  let notes: Note[] = [];
 
   if (user) {
     notes = await prisma.note.findMany({
@@ -38,9 +35,8 @@ async function AppSidebar() {
               "Your Notes"
             ) : (
               <p>
-                <Link href="/Login" className="underline">
-                  {" "}
-                  Log in{" "}
+                <Link href="/login" className="underline">
+                  Login
                 </Link>{" "}
                 to see your notes
               </p>
