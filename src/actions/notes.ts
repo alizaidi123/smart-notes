@@ -1,3 +1,4 @@
+
 "use server";
 
 import { getUser } from "@/auth/server";
@@ -5,6 +6,14 @@ import { prisma } from "@/db/prisma";
 import { handleError } from "@/lib/utils";
 import openai from "@/openai";
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
+
+// Define the type for the note object returned by Prisma with selected fields
+// This matches the fields you are selecting in prisma.note.findMany
+interface SelectedNoteFields {
+  text: string;
+  createdAt: Date; // Prisma typically returns Date objects for DateTime fields
+  updatedAt: Date; // Prisma typically returns Date objects for DateTime fields
+}
 
 export const createNoteAction = async (noteId: string) => {
   try {
@@ -63,7 +72,8 @@ export const askAIAboutNotesAction = async (
   const user = await getUser();
   if (!user) throw new Error("You must be logged in to ask AI questions");
 
-  const notes = await prisma.note.findMany({
+  // Explicitly type the 'notes' array with the defined interface
+  const notes: SelectedNoteFields[] = await prisma.note.findMany({
     where: { authorId: user.id },
     orderBy: { createdAt: "desc" },
     select: { text: true, createdAt: true, updatedAt: true },
@@ -73,12 +83,13 @@ export const askAIAboutNotesAction = async (
     return "You don't have any notes yet.";
   }
 
+  // 'note' parameter is now correctly inferred as 'SelectedNoteFields'
   const formattedNotes = notes
     .map((note) =>
       `
       Text: ${note.text}
-      Created at: ${note.createdAt}
-      Last updated: ${note.updatedAt}
+      Created at: ${note.createdAt.toISOString()}
+      Last updated: ${note.updatedAt.toISOString()}
       `.trim(),
     )
     .join("\n");
