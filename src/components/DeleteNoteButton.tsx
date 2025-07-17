@@ -17,7 +17,7 @@ import { useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { deleteNoteAction } from "@/actions/notes";
-import { toast } from "sonner";
+import { toast } from "sonner"; // Correct import for the toast object
 
 type Props = {
   noteId: string;
@@ -26,7 +26,7 @@ type Props = {
 
 function DeleteNoteButton({ noteId, deleteNoteLocally }: Props) {
   const router = useRouter();
-  
+
   const noteIdParam = useSearchParams().get("noteId") || "";
 
   const [isPending, startTransition] = useTransition();
@@ -36,7 +36,7 @@ function DeleteNoteButton({ noteId, deleteNoteLocally }: Props) {
       const { errorMessage } = await deleteNoteAction(noteId);
 
       if (!errorMessage) {
-      toast.success("You have successfully deleted the note");;
+        toast.success("You have successfully deleted the note"); // Correct way to show success toast
 
         deleteNoteLocally(noteId);
 
@@ -44,7 +44,8 @@ function DeleteNoteButton({ noteId, deleteNoteLocally }: Props) {
           router.replace("/");
         }
       } else {
-        <toast className="error"></toast>;
+        // FIX: Call toast.error() instead of trying to render <toast> JSX
+        toast.error(errorMessage);
       }
     });
   };
@@ -73,6 +74,7 @@ function DeleteNoteButton({ noteId, deleteNoteLocally }: Props) {
           <AlertDialogAction
             onClick={handleDeleteNote}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90 w-24"
+            disabled={isPending} // Added disabled prop to prevent multiple clicks during pending
           >
             {isPending ? <Loader2 className="animate-spin" /> : "Delete"}
           </AlertDialogAction>
