@@ -4,16 +4,16 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupLabel,
-} from "@/components/ui/sidebar";
+} from "@/components/ui/sidebar"; 
 import { prisma } from "@/db/prisma";
-import { Note } from "@prisma/client";
+type NoteType = Awaited<ReturnType<typeof prisma.note.findMany>>[number];
 import Link from "next/link";
 import SidebarGroupContent from "./SidebarGroupContent";
-
 async function AppSidebar() {
   const user = await getUser();
 
-  let notes: Note[] = [];
+  // Use the inferred 'NoteType' for the notes array
+  let notes: NoteType[] = [];
 
   if (user) {
     notes = await prisma.note.findMany({
@@ -35,8 +35,9 @@ async function AppSidebar() {
               "Your Notes"
             ) : (
               <p>
-                <Link href="/login" className="underline">
-                  Login
+                <Link href="/Login" className="underline">
+                  {" "}
+                  Log in{" "}
                 </Link>{" "}
                 to see your notes
               </p>
