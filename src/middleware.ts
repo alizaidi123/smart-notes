@@ -1,5 +1,3 @@
-// middleware.ts
-
 import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs";
 import { NextResponse, type NextRequest } from "next/server";
 
@@ -10,12 +8,13 @@ export async function middleware(request: NextRequest) {
       request,
     });
 
+    // Initialize Supabase client for the middleware
     const supabase = createMiddlewareClient({
       supabaseUrl: process.env.SUPABASE_URL!,
       supabaseKey: process.env.SUPABASE_ANON_KEY!,
       req: request,
-      res: response, // Pass the response object
-      cookieOptions: { // Add cookieOptions here for middleware
+      res: response, // Pass the response object for cookie handling
+      cookieOptions: { // Add cookieOptions for robustness in production
         // Ensure secure is true in production for HTTPS
         secure: process.env.NODE_ENV === 'production',
         // Optional: Set domain if you have issues with subdomains or specific cookie scope.
@@ -26,40 +25,47 @@ export async function middleware(request: NextRequest) {
       },
     });
 
-    // This will refresh the user's session and update the cookies if needed
-    // It's crucial for authentication state in middleware
+    // Refresh the user's session and update the cookies if needed.
+    // This is crucial for authentication state in middleware.
     const {
       data: { session },
       error: sessionError
     } = await supabase.auth.getSession();
 
-    // Basic error logging for debugging (optional, but recommended during dev)
+    // Basic error logging for debugging (optional, but highly recommended during development)
     if (sessionError) {
       console.error("Middleware: Supabase session error:", sessionError);
     }
+
+    // Log current and expected base URLs for debugging purposes
+    console.log("Middleware URL (request.url):", request.url);
+    console.log("NEXT_PUBLIC_BASE_URL:", process.env.NEXT_PUBLIC_BASE_URL);
+
 
     const isAuthRoute =
       request.nextUrl.pathname === "/login" ||
       request.nextUrl.pathname === "/sign-up";
 
     if (isAuthRoute) {
-      if (session) { // Check if user is logged in
+      if (session) { // If user is logged in and trying to access auth routes, redirect to home
         console.log("Middleware: User has session, redirecting from auth route to /");
         return NextResponse.redirect(
           new URL("/", process.env.NEXT_PUBLIC_BASE_URL!),
         );
       }
-    } else { // Only proceed with note fetching if not an auth route
+    } else { // Handle routes that are not auth routes
       const { searchParams, pathname } = request.nextUrl;
 
-      // Only attempt to fetch/create note if on the root path and no noteId is present
+      // Logic to fetch or create a note only applies to the root path ("/")
+      // and only if a noteId isn't already present in the URL.
       if (!searchParams.get("noteId") && pathname === "/") {
         if (session) { // Check if user has an active session
           try {
             console.log("Middleware: User has session, attempting to fetch or create a note.");
-            // Fetching newest note
+
+            // Attempt to fetch the newest note for the user
             const newestNoteResponse = await fetch(
-              `${process.env.NEXT_PUBLIC_BASE_URL}/api/fetch-newest-note`, // userId should be handled internally by the API route
+              `${process.env.NEXT_PUBLIC_BASE_URL}/api/fetch-newest-note`,
               {
                   headers: {
                       // Pass the Authorization header if your API route uses it to get the session
@@ -71,21 +77,23 @@ export async function middleware(request: NextRequest) {
             if (!newestNoteResponse.ok) {
               const errorText = await newestNoteResponse.text();
               console.error("Middleware: Failed to fetch newest note API response:", newestNoteResponse.status, errorText);
-              // If API fails, redirect to login or show error.
+              // If API fails (e.g., due to an internal error), redirect to login
               return NextResponse.redirect(new URL("/login", request.url));
             }
 
             const { newestNoteId } = await newestNoteResponse.json();
 
             if (newestNoteId) {
+              // If a newest note is found, redirect to the home page with the noteId
               const url = request.nextUrl.clone();
               url.searchParams.set("noteId", newestNoteId);
               console.log("Middleware: Redirecting to / with newestNoteId:", newestNoteId);
               return NextResponse.redirect(url);
             } else {
+              // If no newest note found, create a new one
               console.log("Middleware: No newest note found, creating a new one.");
               const createNoteResponse = await fetch(
-                `${process.env.NEXT_PUBLIC_BASE_URL}/api/create-new-note`, // userId should be handled internally by the API route
+                `${process.env.NEXT_PUBLIC_BASE_URL}/api/create-new-note`,
                 {
                   method: "POST",
                   headers: {
@@ -114,33 +122,34 @@ export async function middleware(request: NextRequest) {
             return NextResponse.redirect(new URL("/login", request.url));
           }
         } else {
-          // If no session and not on auth route, and trying to access root without noteId
+          // If no session and trying to access the root path without a noteId, redirect to login
           console.log("Middleware: No session, redirecting to login from root path.");
           return NextResponse.redirect(new URL("/login", request.url));
         }
       }
     }
 
-    // Ensure cookies are correctly set on the response before returning
-    console.log("Middleware: Proceeding to next response (no redirects from middleware).");
+    // If no specific redirect conditions are met, proceed with the original response
+    console.log("Middleware: Proceeding to next response (no redirects from middleware logic).");
     return response;
   } catch (globalError) {
+    // This is a catch-all for any unexpected errors during middleware execution
     console.error("Middleware: Unhandled error in middleware execution:", globalError);
-    // This is a last-resort catch-all. Redirect to login or a generic error page.
+    // As a fallback, redirect to login or a generic error page
     return NextResponse.redirect(new URL("/login", request.url));
   }
 }
 
-// Config for which paths the middleware should run on
+// Configuration for which paths the middleware should run on
 export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - Any files in the public folder (e.g., .svg, .png, etc.)
+     * - /api (API routes) - These are explicitly excluded from middleware processing
+     * - /_next/static (static files like CSS, JS bundles)
+     * - /_next/image (image optimization files)
+     * - /favicon.ico (favicon file)
+     * - Any files in the public folder (e.g., .svg, .png, etc. - matching common image extensions)
      */
     '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
