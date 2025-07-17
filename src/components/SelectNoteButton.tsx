@@ -1,14 +1,16 @@
 "use client";
 
 import useNote from "@/hooks/useNote";
-import { Note } from "@prisma/client";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { SidebarMenuButton } from "./ui/sidebar";
 import Link from "next/link";
 
+// Import the shared NoteType
+import type { NoteType } from "@/types/prisma"; 
+
 type Props = {
-  note: Note;
+  note: NoteType; 
 };
 
 function SelectNoteButton({ note }: Props) {
