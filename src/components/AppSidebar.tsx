@@ -4,15 +4,15 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupLabel,
-} from "@/components/ui/sidebar"; 
-import { prisma } from "@/db/prisma";
-type NoteType = Awaited<ReturnType<typeof prisma.note.findMany>>[number];
+} from "@/components/ui/sidebar";
+import { prisma } from "@/db/prisma"; 
 import Link from "next/link";
 import SidebarGroupContent from "./SidebarGroupContent";
+import type { NoteType } from "@/types"; 
+
 async function AppSidebar() {
   const user = await getUser();
 
-  // Use the inferred 'NoteType' for the notes array
   let notes: NoteType[] = [];
 
   if (user) {
