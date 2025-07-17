@@ -40,7 +40,7 @@ function AuthForm({type}: Props) {
         }
 
         if (!errorMessage){
-            toast.success
+            toast.error("")
             router.replace("/")
         } else {
             toast.error(errorMessage)
