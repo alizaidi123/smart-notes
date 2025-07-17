@@ -6,18 +6,18 @@ import {
   SidebarGroupLabel,
 } from "@/components/ui/sidebar";
 import { prisma } from "@/db/prisma";
-// OPTION A: Import PrismaClient and infer the Note type
+// Import PrismaClient type for type inference
 import type { PrismaClient } from "@prisma/client";
-// OPTION B: (Less common but good to know) Sometimes types are in a subpath like this:
-// import type { Note } from '@prisma/client/edge'; // or similar depending on your Prisma client generation setup
 
-// Define the Note type based on the PrismaClient's Note model
-// This is a robust way to get the exact generated type for your 'Note' model
+// Define the Note type by inferring it from PrismaClient's 'note' model
+// This is a robust way to get the exact generated type when direct 'import type { Note }' fails.
 type NoteType = PrismaClient['note']['findMany'] extends (args: any) => Promise<infer U> ? U[number] : any;
 
-
 import Link from "next/link";
-import SidebarGroupContent from "./AppSidebar/SidebarGroupContent"; // Corrected path assumption if needed
+// IMPORTANT: Ensure this path is correct for your project
+// If SidebarGroupContent.tsx is in the same folder as AppSidebar.tsx, use "./SidebarGroupContent"
+// If it's in a subfolder like 'AppSidebar', use "./AppSidebar/SidebarGroupContent"
+import SidebarGroupContent from "./SidebarGroupContent"; // Reverted to original common path
 
 async function AppSidebar() {
   const user = await getUser();
