@@ -1,5 +1,3 @@
-
-
 import { getUser } from "@/auth/server";
 import {
   Sidebar,
@@ -8,15 +6,24 @@ import {
   SidebarGroupLabel,
 } from "@/components/ui/sidebar";
 import { prisma } from "@/db/prisma";
-import type { Note } from "@prisma/client"; // <--- THIS IS THE CRUCIAL LINE
+// OPTION A: Import PrismaClient and infer the Note type
+import type { PrismaClient } from "@prisma/client";
+// OPTION B: (Less common but good to know) Sometimes types are in a subpath like this:
+// import type { Note } from '@prisma/client/edge'; // or similar depending on your Prisma client generation setup
+
+// Define the Note type based on the PrismaClient's Note model
+// This is a robust way to get the exact generated type for your 'Note' model
+type NoteType = PrismaClient['note']['findMany'] extends (args: any) => Promise<infer U> ? U[number] : any;
+
+
 import Link from "next/link";
-import SidebarGroupContent from "./SidebarGroupContent";
+import SidebarGroupContent from "./AppSidebar/SidebarGroupContent"; // Corrected path assumption if needed
 
 async function AppSidebar() {
   const user = await getUser();
 
-  // Ensure this line uses 'Note[]' directly, without Prisma.NoteGetPayload<{}> or <any>
-  let notes: Note[] = [];
+  // Use the newly defined NoteType
+  let notes: NoteType[] = [];
 
   if (user) {
     notes = await prisma.note.findMany({
