@@ -1,9 +1,10 @@
 
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { prisma } from "@/db/prisma"; // Import Prisma client
 
 export async function createClient() {
-  const cookieStore = cookies() // No need for await here
+  const cookieStore = cookies();
 
   const client = createServerClient(
     process.env.SUPABASE_URL!,
@@ -18,27 +19,18 @@ export async function createClient() {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, {
                 ...options,
-                // Ensure secure is true in production for HTTPS
                 secure: process.env.NODE_ENV === 'production',
-                // Optional: Set domain if you have issues with subdomains or specific cookie scope.
-                // For Vercel's default domains (e.g., smart-notes-u7gh.vercel.app), this is usually not needed,
-                // but can be added if you use custom domains and have issues.
-                // domain: process.env.NEXT_PUBLIC_COOKIE_DOMAIN || undefined,
+                sameSite: 'Lax',
               })
             )
           } catch (error) {
-            // The `cookies().set()` method can throw if used in a Server Component
-            // or Server Action that has a `redirect()` call in it.
-            // This is expected and usually harmless. Log it for debugging if needed.
             console.warn("Cookie set failed in createServerClient:", error);
           }
         },
       },
-      // You can also add top-level cookie options here, which will be merged with individual cookie options
       cookieOptions: {
         secure: process.env.NODE_ENV === 'production',
-        // domain: process.env.NEXT_PUBLIC_COOKIE_DOMAIN || undefined,
-        sameSite: 'Lax', // Recommended for most use cases
+        sameSite: 'Lax',
       }
     }
   )
@@ -46,14 +38,38 @@ export async function createClient() {
 }
 
 export async function getUser(){
-    const {auth} = await createClient()
+    const supabase = await createClient(); // Get the Supabase client
 
-    const userObject = await auth.getUser()
+    const { data: { user }, error: userError } = await supabase.auth.getUser(); // Get the Supabase user
 
-    if (userObject.error) {
-        console.error("Error fetching user session in getUser:", userObject.error)
-        return null
+    if (userError) {
+        console.error("Error fetching user session in getUser:", userError);
+        return null;
     }
 
-    return userObject.data.user
+    if (user) {
+        // --- THIS IS THE CRITICAL ADDITION ---
+        // Upsert the user into your Prisma database every time their session is fetched
+        // This guarantees the User record exists for foreign key constraints.
+        try {
+            await prisma.user.upsert({
+                where: { id: user.id },
+                update: {
+                    email: user.email!, // Update email if it changed
+                    updatedAt: new Date(),
+                },
+                create: {
+                    id: user.id,
+                    email: user.email!,
+                },
+            });
+            console.log(`User synced to Prisma DB: ${user.id}`);
+        } catch (prismaError) {
+            console.error("Failed to upsert user into Prisma DB:", prismaError);
+            // Optionally, you might want to return null or throw if DB sync is critical
+            // For now, we'll let the user proceed with Supabase auth but log the DB issue.
+        }
+    }
+
+    return user; // Return the Supabase user object
 }
