@@ -9,7 +9,6 @@ import { Button } from "./ui/button"
 import { Loader2 } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
-import { Router } from "next/router"
 import { loginAction, signUpAction } from "@/actions/users"
 
 type Props = {
@@ -26,9 +25,7 @@ function AuthForm({type}: Props) {
         const email = formData.get("email") as string
         const password = formData.get("password") as string
 
-        let errorMessage;
-        let title;
-        let description;
+
         if(isLoginForm){
             errorMessage = (await loginAction(email,password)).errorMessage
             title = "Logged In"
