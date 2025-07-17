@@ -1,42 +1,28 @@
-
 import { prisma } from "@/db/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/auth/server"; // Import your server client utility
+import { v4 as uuidv4 } from 'uuid'; // Import uuid generator
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient(); // Use createClient to get session
+    // Authenticate user directly in the API route
+    const supabase = await createClient();
     const { data: { user }, error: userError } = await supabase.auth.getUser();
 
     if (userError || !user) {
-      console.error("API /create-new-note: User not authenticated.", userError);
+      console.error("API /create-new-note: User not authenticated or session error.", userError);
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Ensure the user exists in Prisma DB before creating a note for them
-    // This is a safety net for edge cases where loginAction might not have completed or wasn't used.
-    await prisma.user.upsert({
-      where: { id: user.id },
-      update: {
-        email: user.email!, // Update email if it changed
-        updatedAt: new Date(),
-      },
-      create: {
-        id: user.id,
-        email: user.email!,
-      },
-    });
+    // The user should already be synced to Prisma DB via getUser() in src/auth/server.ts
 
-    // Get noteId from request body if it's passed, otherwise generate new UUID
-    // Assuming your middleware might be trying to pass a pre-generated ID sometimes.
-    const { searchParams } = new URL(request.url);
-    const preGeneratedNoteId = searchParams.get("noteId"); // Middleware might pass this
-    const newNoteId = preGeneratedNoteId || require('uuid').v4(); // Or use `crypto.randomUUID()` in Node.js 16+ or a simpler approach
+    // Generate a new UUID for the note
+    const newNoteId = uuidv4();
 
     const { id } = await prisma.note.create({
       data: {
-        id: newNoteId, // Use the pre-generated or newly generated ID
-        authorId: user.id,
+        id: newNoteId,
+        authorId: user.id, // Use the user.id from the session
         text: "",
       },
     });
