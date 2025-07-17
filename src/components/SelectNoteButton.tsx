@@ -5,7 +5,9 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { SidebarMenuButton } from "./ui/sidebar";
 import Link from "next/link";
-import type { NoteType } from "@/types"; 
+
+// Import the shared NoteType
+import type { NoteType } from "@/types";
 
 type Props = {
   note: NoteType;
@@ -22,10 +24,10 @@ function SelectNoteButton({ note }: Props) {
     if (noteId === note.id) {
       setShouldUseGlobalNoteText(true);
     } else {
-      setLocalNoteText(note.text); // Ensure localNoteText is reset if not the active note
+      setLocalNoteText(note.text); // Reset local note text if this note is no longer selected
       setShouldUseGlobalNoteText(false);
     }
-  }, [noteId, note.id, note.text]); // Added note.text to dependency array for completeness
+  }, [noteId, note.id, note.text]);
 
   useEffect(() => {
     if (shouldUseGlobalNoteText) {
@@ -34,11 +36,9 @@ function SelectNoteButton({ note }: Props) {
   }, [selectedNoteText, shouldUseGlobalNoteText]);
 
   const blankNoteText = "EMPTY NOTE";
-  let noteText = localNoteText || blankNoteText;
-  // This conditional logic can be simplified as localNoteText already handles the source
-  // if (shouldUseGlobalNoteText) {
-  //   noteText = selectedNoteText || blankNoteText;
-  // }
+  // FIX: Changed 'let' to 'const' and streamlined the assignment.
+  // The 'localNoteText' state already holds the correct text based on 'shouldUseGlobalNoteText' logic.
+  const noteText = localNoteText || blankNoteText;
 
   return (
     <SidebarMenuButton
