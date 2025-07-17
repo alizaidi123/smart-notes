@@ -5,12 +5,10 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { SidebarMenuButton } from "./ui/sidebar";
 import Link from "next/link";
-
-// Import the shared NoteType
-import type { NoteType } from "@/types/prisma"; 
+import type { NoteType } from "@/types"; 
 
 type Props = {
-  note: NoteType; 
+  note: NoteType;
 };
 
 function SelectNoteButton({ note }: Props) {
@@ -24,9 +22,10 @@ function SelectNoteButton({ note }: Props) {
     if (noteId === note.id) {
       setShouldUseGlobalNoteText(true);
     } else {
+      setLocalNoteText(note.text); // Ensure localNoteText is reset if not the active note
       setShouldUseGlobalNoteText(false);
     }
-  }, [noteId, note.id]);
+  }, [noteId, note.id, note.text]); // Added note.text to dependency array for completeness
 
   useEffect(() => {
     if (shouldUseGlobalNoteText) {
@@ -36,9 +35,10 @@ function SelectNoteButton({ note }: Props) {
 
   const blankNoteText = "EMPTY NOTE";
   let noteText = localNoteText || blankNoteText;
-  if (shouldUseGlobalNoteText) {
-    noteText = selectedNoteText || blankNoteText;
-  }
+  // This conditional logic can be simplified as localNoteText already handles the source
+  // if (shouldUseGlobalNoteText) {
+  //   noteText = selectedNoteText || blankNoteText;
+  // }
 
   return (
     <SidebarMenuButton
