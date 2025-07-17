@@ -1,4 +1,4 @@
-"use server"
+"use server";
 
 import { getUser } from "@/auth/server";
 import { prisma } from "@/db/prisma";
@@ -6,17 +6,18 @@ import { handleError } from "@/lib/utils";
 import openai from "@/openai";
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
 
-export const updateNoteAction = async (noteId: string, text: string) => {
+export const createNoteAction = async (noteId: string) => {
   try {
-    
-    const user = await getUser()
-    if (!user) throw new Error("You must be logged in to update a note")
+    const user = await getUser();
+    if (!user) throw new Error("You must be logged in to create a note");
 
-    await prisma.note.update({
-        where: {id: noteId},
-        data: {text}
-
-    })
+    await prisma.note.create({
+      data: {
+        id: noteId,
+        authorId: user.id,
+        text: "",
+      },
+    });
 
     return { errorMessage: null };
   } catch (error) {
@@ -24,20 +25,15 @@ export const updateNoteAction = async (noteId: string, text: string) => {
   }
 };
 
-export const createNoteAction = async (noteId: string) => {
+export const updateNoteAction = async (noteId: string, text: string) => {
   try {
-    
-    const user = await getUser()
-    if (!user) throw new Error("You must be logged in to create a note")
+    const user = await getUser();
+    if (!user) throw new Error("You must be logged in to update a note");
 
-    await prisma.note.create({
-        data: {
-            id: noteId,
-            authorId: user.id,
-            text: ""
-        }
-
-    })
+    await prisma.note.update({
+      where: { id: noteId },
+      data: { text },
+    });
 
     return { errorMessage: null };
   } catch (error) {
