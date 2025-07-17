@@ -15,7 +15,7 @@ async function AppSidebar() {
   const user = await getUser();
 
 
-  let notes: Prisma.NoteGetPayload<{}>[] = [];
+  let notes: Prisma.NoteGetPayload<any>[] = [];
 
   if (user) {
     notes = await prisma.note.findMany({
