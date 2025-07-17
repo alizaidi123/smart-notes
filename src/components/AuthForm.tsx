@@ -19,31 +19,36 @@ function AuthForm({type}: Props) {
   const isLoginForm = type === "Login"
   const router = useRouter()
 
-    const [isPending, startTransition] =useTransition()
+    const [isPending, startTransition] = useTransition()
+
   const handleSubmit = (formData: FormData) => {
     startTransition(async() => {
         const email = formData.get("email") as string
         const password = formData.get("password") as string
 
+        // FIX: Declare errorMessage here before its first use
+        let errorMessage: string | null; 
+        let toastTitle: string;
+        let toastDescription: string;
 
         if(isLoginForm){
             errorMessage = (await loginAction(email,password)).errorMessage
-            title = "Logged In"
-            description = " You have been successfully logged in"
+            toastTitle = "Logged In"
+            toastDescription = "You have been successfully logged in."
         } else {
             errorMessage = (await signUpAction(email,password)).errorMessage
-            title = "Singed Up"
-            description = " Check your Email for Confirmation Limk"
+            toastTitle = "Signed Up"
+            toastDescription = "Check your email for a confirmation link."
         }
 
         if (!errorMessage){
-            toast.error("")
+            toast.success(toastTitle, {
+                description: toastDescription
+            })
             router.replace("/")
         } else {
-            toast.error(errorMessage)
-
+            toast.error(errorMessage) 
         }
-
     })
   }
     return (
@@ -51,7 +56,7 @@ function AuthForm({type}: Props) {
         <CardContent className="grid w-full items-center gap-4">
             <div className="flex flex-col space-y-1.5">
                 <Label htmlFor="email">
-                    Email 
+                    Email
                 </Label>
                 <Input
                     id="email"
@@ -63,20 +68,20 @@ function AuthForm({type}: Props) {
             </div>
             <div className="flex flex-col space-y-1.5">
                 <Label htmlFor="password">
-                    Password 
+                    Password
                 </Label>
                 <Input
                     id="password"
                     name="password"
-                    placeholder="Enter Your Email"
+                    placeholder="Enter Your Password"
                     type="password"
                     required
                     disabled={isPending}/>
             </div>
         </CardContent>
         <CardFooter className="flex flex-col mt-5 gap-6">
-            <Button className="w-full">
-                {isPending ? <Loader2 className="animate-spin"/>: isLoginForm ? "Login" : "Sign Up"}
+            <Button className="w-full" disabled={isPending}>
+                {isPending ? <Loader2 className="animate-spin mr-2"/>: isLoginForm ? "Login" : "Sign Up"}
             </Button>
             <p className="text-xs">
                 {isLoginForm? "Don't have an account yet?": "Already have an account?"}{" "}
